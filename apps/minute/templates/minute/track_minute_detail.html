@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Track Minute: {{ minute.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Hidden input for JavaScript to access minute ID -->
+    <input type="hidden" id="minute-id" value="{{ minute.id }}">
+
+    <!-- Success Message for Submitted Minute -->
+    {% if show_success_message %}
+    <div class="text-center mb-4">
+        <h1 class="text-success">
+            <i class="fas fa-check-circle"></i> Minute Submitted Successfully!
+        </h1>
+        <p class="text-muted">{{ success_message }}</p>
+    </div>
+    {% endif %}
+
+
+{% include "minute/minute_sheet.html" with minute=minute current_description=current_description current_page=current_page total_pages=total_pages %}
+
+
+
+
+    <!-- Approval Chain Details (Existing Table - Unchanged) -->
+    {% if approval_chain %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Approval Chain: {{ approval_chain.name }}</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for approver in approvers_status %}
+                <li class="list-group-item d-flex justify-content-between align-items-center
+                    {% if approver.is_current %}list-group-item-info{% endif %}">
+                    <div>
+                        <strong>{{ approver.approver }}</strong>
+                        <span class="badge
+                            {% if approver.status == 'Approved' %}bg-success
+                            {% elif approver.status == 'Rejected' %}bg-danger
+                            {% elif approver.status == 'Pending' %}bg-warning
+                            {% elif approver.status == 'Returned' %}bg-info
+                            {% else %}bg-secondary{% endif %}">
+                            {{ approver.status }}
+                        </span>
+                    </div>
+                    <div>
+                         <small>
+                            <strong>Action Time:</strong> {{ approver.action_time|default:"Pending" }} <br>
+                            <strong>Remarks:</strong> {{ approver.remarks|default:"No remarks provided" }}
+                        </small>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- NEW: Approval Chain Progress Tracker -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Approval Chain Progress</h5>
+        </div>
+        <div class="card-body">
+            <div id="approval-chain-progress">
+                <p class="text-center">Fetching latest approval updates...</p>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning mt-4">No approval chain linked to this minute.</div>
+    {% endif %}
+
+    <!-- Download and Back Buttons -->
+<div class="mt-4 text-center">
+    <a href="{% url 'minute:minute_pdf' minute.id %}" class="btn btn-primary me-3">
+        <i class="fas fa-download"></i> Download Minute (PDF)
+    </a>
+    <a href="{% url 'minute:track' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Track All Minutes
+    </a>
+</div>
+
+
+</div>
+
+<style>
+.chain-timeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.chain-item {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    text-align: center;
+    min-width: 150px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chain-arrow {
+    font-size: 1.5rem;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.approver-name {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.status-badge {
+    margin-top: 5px;
+}
+
+.action-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+
+</style>
+
+<script src="{% static 'js/track_minute.js' %}"></script>
+{% endblock %}

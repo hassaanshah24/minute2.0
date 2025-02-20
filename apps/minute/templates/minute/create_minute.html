@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Create Official Minute Sheet{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Page Title -->
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-uppercase">Create Official Minute Sheet</h1>
+        <p class="text-muted">Ensure that all details match the university's standard format.</p>
+    </div>
+
+    <!-- Display Form Errors -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <ul>
+            {% for field, errors in form.errors.items %}
+                <li><strong>{{ field }}</strong>: {{ errors|join:", " }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Official Minute Sheet Container -->
+    <div class="card shadow-lg border-0 rounded-lg">
+        <div class="card-header bg-primary text-white text-center py-4">
+            <h2 class="mb-0 fw-bold">OFFICIAL MINUTE SHEET</h2>
+        </div>
+        <div class="card-body px-5 py-4">
+            <form method="post" enctype="multipart/form-data" id="minute-form">
+                {% csrf_token %}
+
+                <!-- University Header -->
+                <div class="text-center mb-4">
+                    <h5 class="fw-bold">Pakistan Defence Officers Housing Authority, Karachi-75500</h5>
+                    <h6 class="text-uppercase">DHA Suffa University</h6>
+                    <p class="text-muted">Off Khayaban-e-Tufail, Phase – VII (Extension), DHA, Karachi – 75500</p>
+                    <hr class="border-2">
+                </div>
+
+                <!-- Document Numbering -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="fs-5"><strong>Minute Sheet No:</strong> {{ form.unique_id.value|default_if_none:'Auto-Generated' }}</span>
+                    <span class="fs-5"><strong>Sheet:</strong> {{ form.sheet_number }}</span>
+                </div>
+
+                <!-- Title -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Title:</label>
+                    <input type="text"
+                           name="title"
+                           class="form-control"
+                           placeholder="Enter the title of the minute"
+                           value="{{ form.title.value|default_if_none:'' }}"
+                           required>
+                </div>
+
+                <!-- Subject -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Subject:</label>
+                    <input type="text"
+                           name="subject"
+                           class="form-control"
+                           placeholder="Enter the subject of the minute"
+                           value="{{ form.subject.value|default_if_none:'' }}"
+                           required>
+                </div>
+
+                <!-- Minute Content -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Minute Details:</label>
+                    <textarea name="description"
+                              class="form-control"
+                              placeholder="Enter detailed minute content..."
+                              rows="6"
+                              required>{{ form.description.value|default_if_none:'' }}</textarea>
+                </div>
+
+                <!-- Attachments -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Upload Attachments (if any):</label>
+                    <input type="file" name="attachment" class="form-control">
+                    {% if minute and minute.attachment %}
+                        <p class="mt-2">
+                            <a href="{{ minute.attachment.url }}" target="_blank" class="text-primary">View Current Attachment</a>
+                        </p>
+                    {% endif %}
+                </div>
+
+                <!-- Approval Chain Section -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Approval Chain:</label>
+                    <select name="approval_chain" class="form-select" required>
+                        <option value="">Select an Approval Chain</option>
+                        {% for chain in approval_chains %}
+                            <option value="{{ chain.id }}"
+                                {% if selected_chain and selected_chain.id == chain.id %}selected{% endif %}>
+                                {{ chain.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- Approval Chain Warning -->
+                    {% if not form.instance.approval_chain %}
+                    <div class="alert alert-warning mt-3">
+                        <strong>Note:</strong> Your minute must be linked to an approval chain before submission.
+                        <a href="{% url 'approval_chain:create' %}?minute_id={{ form.instance.id }}" class="btn btn-sm btn-secondary ms-2">Create Approval Chain</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Approval Chain Preview -->
+                <div id="approval-chain-preview" class="mt-3">
+                    {% if selected_chain %}
+                        <h5 class="fw-bold">Approval Chain Overview:</h5>
+                        <ul class="list-group">
+                            {% for approver in selected_chain.approvers.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ approver.user.username }}</span>
+                                    <span class="badge bg-secondary">Order: {{ approver.order }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <!-- Submission Actions -->
+                <div class="text-center mt-5">
+                    <button type="submit" class="btn btn-success px-4 py-2" onclick="return confirmSubmission();">Submit for Approval</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Before Submission -->
+<script>
+    function confirmSubmission() {
+        return confirm("Are you sure you want to submit this Minute Sheet for approval?");
+    }
+</script>
+
+<script src="{% static 'js/create_minute.js' %}"></script>
+{% endblock %}

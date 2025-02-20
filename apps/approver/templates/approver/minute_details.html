@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Minute Details - Approver{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Page Title -->
+    <h1 class="mb-4 text-primary">Minute Details</h1>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        {% if success %}
+        <div class="toast bg-success text-white" role="alert" data-bs-autohide="true">
+            <div class="toast-header bg-success text-white">
+                <strong class="me-auto">Success</strong>
+                <small>Now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">{{ success }}</div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="toast bg-danger text-white" role="alert" data-bs-autohide="true">
+            <div class="toast-header bg-danger text-white">
+                <strong class="me-auto">Error</strong>
+                <small>Now</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">{{ error }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Minute Information -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ minute.title }}</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Unique ID:</strong> {{ minute.unique_id }}</p>
+            <p><strong>Subject:</strong> {{ minute.subject|default:"N/A" }}</p>
+            <p><strong>Description:</strong></p>
+            <p>{{ minute.description }}</p>
+            <p><strong>Attachment:</strong>
+                {% if minute.attachment %}
+                <a href="{{ minute.attachment.url }}" class="btn btn-outline-info btn-sm" target="_blank">
+                    <i class="fas fa-download"></i> Download
+                </a>
+                {% else %}
+                <span class="text-muted">No attachment</span>
+                {% endif %}
+            </p>
+            <p><strong>Status:</strong>
+                <span class="badge
+                    {% if minute.status == 'Approved' %}bg-success
+                    {% elif minute.status == 'Rejected' %}bg-danger
+                    {% elif minute.status == 'Pending' %}bg-warning text-dark
+                    {% else %}bg-secondary{% endif %}">{{ minute.status }}</span>
+            </p>
+            <p><strong>Created By:</strong> {{ minute.created_by.get_full_name|default:minute.created_by.username }}</p>
+            <p><strong>Created At:</strong> {{ minute.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+    </div>
+
+    <!-- Approval Chain -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Approval Chain</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-bordered table-hover m-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Action Time</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in approvers_status %}
+                    <tr>
+                        <td>
+                            {{ item.approver.user.get_full_name|default:item.approver.user.username }}
+                            {% if item.is_current %}
+                            <span class="badge bg-primary ms-2">Current</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge
+                                {% if item.status == 'Approved' %}bg-success
+                                {% elif item.status == 'Rejected' %}bg-danger
+                                {% elif item.status == 'Marked' %}bg-info
+                                {% elif item.status == 'Returned' %}bg-secondary
+                                {% elif item.is_current %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}">{{ item.status }}</span>
+                        </td>
+                        <td>
+                            {% if item.action_time %}
+                            {{ item.action_time|date:"M d, Y H:i" }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.remarks %}
+                            {{ item.remarks }}
+                            {% else %}
+                            <span class="text-muted">No remarks provided</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No approvers in the chain.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Form -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Take Action</h5>
+        </div>
+        <div class="card-body">
+            <form id="action-form" method="post" action="{% url 'approver:process_action' current_approval.pk %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="remarks" class="form-label">Remarks:</label>
+                    <textarea name="remarks" id="remarks" class="form-control" rows="3" placeholder="Add remarks here..." required></textarea>
+                </div>
+                <div class="d-flex justify-content-start gap-2">
+                    <button type="submit" name="action" value="approve" class="btn btn-success">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button type="submit" name="action" value="reject" class="btn btn-danger">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                    <button type="button" class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#markToModal">
+                        <i class="fas fa-share"></i> Mark-To
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#returnToModal">
+                        <i class="fas fa-undo"></i> Return-To
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Mark-To Modal -->
+<div class="modal fade" id="markToModal" tabindex="-1" aria-labelledby="markToModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'approver:process_action' current_approval.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="markToModalLabel">Mark-To</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="mark_target_user" class="form-label">Target User:</label>
+                        <select name="target_user_id" id="mark_target_user" class="form-select">
+                            <option value="" selected>Select a user</option>
+                            {% for user in all_users %}
+                            <option value="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="mark_order" class="form-label">Order:</label>
+                        <input type="number" name="order" id="mark_order" class="form-control" min="1" max="{{ approvers_status|length|add:1 }}" placeholder="Enter order">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="action" value="mark-to" class="btn btn-warning text-dark">Mark-To</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Return-To Modal -->
+<div class="modal fade" id="returnToModal" tabindex="-1" aria-labelledby="returnToModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'approver:process_action' current_approval.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="returnToModalLabel">Return-To</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="return_target_user" class="form-label">Target User:</label>
+                        <select name="target_user_id" id="return_target_user" class="form-select">
+                            <option value="" selected>Select a user</option>
+                            {% for user in all_users %}
+                            <option value="{{ user.pk }}">{{ user.get_full_name|default:user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="action" value="return-to" class="btn btn-secondary">Return-To</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Include necessary JavaScript libraries -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('action-form');
+        const remarksField = document.getElementById('remarks');
+        const submitButtons = document.querySelectorAll('#action-form button[type="submit"]');
+
+        // Add event listener to each submit button to track which one was clicked
+        submitButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                submitButtons.forEach(btn => btn.removeAttribute('data-clicked')); // Reset
+                button.setAttribute('data-clicked', 'true'); // Track clicked button
+            });
+        });
+
+        // Validate and debug form submission
+        form.addEventListener('submit', function (event) {
+            const remarks = remarksField.value.trim();
+            const clickedButton = document.querySelector('#action-form button[data-clicked="true"]');
+            const action = clickedButton ? clickedButton.value : 'unknown';
+
+            console.log("Form Submitted:");
+            console.log("Remarks:", remarks);
+            console.log("Action:", action);
+
+            // Validation rules for remarks
+            const requireRemarks = ['mark-to', 'return-to']; // Actions requiring remarks
+            const isRemarksRequired = requireRemarks.includes(action);
+
+            // Validate remarks based on action
+            if (isRemarksRequired && !remarks) {
+                event.preventDefault();
+                alert("Remarks are required for this action.");
+                console.error("Remarks validation failed: Field is empty.");
+                return;
+            }
+
+            // Log the complete form data for debugging
+            console.group("Submitted Form Data");
+            console.log("Remarks:", remarks || "N/A");
+            console.log("Action Button Clicked:", action);
+            console.groupEnd();
+        });
+    });
+</script>
+
+
+{% endblock %}

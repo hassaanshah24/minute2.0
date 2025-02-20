@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minute Sheet - {{ minute.unique_id }}</title>
+    <style>
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 12pt;
+            margin: 20px;
+        }
+        .header {
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .divider {
+            border-top: 2px solid black;
+            margin: 10px 0;
+        }
+        .content {
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        .signature-section {
+            margin-top: 50px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ✅ Header -->
+    <div class="header">
+        Pakistan Defence Officers Housing Authority, Karachi – 75500 <br>
+        <strong>DHA Suffa University</strong> <br>
+        Off Khayaban-e-Tufail, Phase VII (Extension), DHA, Karachi – 75500
+    </div>
+    <hr class="divider">
+
+    <!-- ✅ Minute Details -->
+    <h2 style="text-align: center; text-decoration: underline;">Minute Sheet</h2>
+
+    <p><strong>Minute ID:</strong> {{ minute.unique_id }}</p>
+    <p><strong>Title:</strong> {{ minute.title }}</p>
+    <p><strong>Subject:</strong> {{ minute.subject }}</p>
+
+    <!-- ✅ Full Description (Merged for PDF) -->
+    <h3>Description:</h3>
+    <p class="content">{{ full_description|linebreaks }}</p>
+
+    <!-- ✅ Approval Chain -->
+    <h3>Approval Chain:</h3>
+    <p class="content">{{ approval_chain_text }}</p>
+
+    <!-- ✅ Signature Section -->
+    <div class="signature-section">
+        <p>_________________________</p>
+        <p>{{ minute.created_by.get_full_name }}</p>
+        <p>{{ minute.created_by.designation }}, {{ minute.created_by.department.code }}</p>
+        <p>{{ minute.created_at|date:"jS F, Y" }}</p>
+    </div>
+
+    <!-- ✅ Footer -->
+    <div class="footer">
+        Page 1 of 1 <!-- PDFs are continuous, so no need for pagination -->
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+Minute Details
+==============
+
+Title: {{ minute.title }}
+Subject: {{ minute.subject }}
+Description: {{ minute.description }}
+Unique ID: {{ minute.unique_id }}
+Created By: {{ minute.created_by.username }}
+
+Approval Chain:
+{% if approval_chain %}
+    {{ approval_chain }}
+{% else %}
+    No Approval Chain Created.
+{% endif %}
+
+Attachment:
+{% if minute.attachment %}
+    Attachment URL: {{ minute.attachment.url }}
+{% else %}
+    No Attachment.
+{% endif %}
+
+Status: {{ minute.get_status_display }}

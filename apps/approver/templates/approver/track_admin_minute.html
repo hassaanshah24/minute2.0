@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Track Admin Minute: {{ minute.title }}{% endblock %}
+<pre>{{ approvers_status|json_script:"approvers_data" }}</pre>
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="text-center mb-4">
+        <h1 class="text-uppercase text-primary">{{ minute.title }}</h1>
+        <p>
+            <span class="badge
+                {% if minute.status == 'Approved' %}bg-success
+                {% elif minute.status == 'Rejected' %}bg-danger
+                {% elif minute.status == 'Pending' %}bg-warning
+                {% else %}bg-secondary{% endif %}">
+                {{ minute.get_status_display }}
+            </span>
+        </p>
+        <small>Tracked on: {{ minute.created_at|date:"D, d M Y H:i" }}</small>
+    </div>
+
+    <!-- Minute Information Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>Minute Information</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tr>
+                    <th>Unique ID</th>
+                    <td>{{ minute.unique_id }}</td>
+                </tr>
+                <tr>
+                    <th>Subject</th>
+                    <td>{{ minute.subject|default:"No Subject Provided" }}</td>
+                </tr>
+                <tr>
+                    <th>Description</th>
+                    <td>{{ minute.description|default:"No Description" }}</td>
+                </tr>
+                <tr>
+                    <th>Attachment</th>
+                    <td>
+                        {% if minute.attachment %}
+                            <a href="{{ minute.attachment.url }}" target="_blank">Download Attachment</a>
+                        {% else %}
+                            <span class="text-muted">No Attachment</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Created By</th>
+                    <td>{{ minute.created_by.get_full_name|default:minute.created_by.username }}</td>
+                </tr>
+                <tr>
+                    <th>Created At</th>
+                    <td>{{ minute.created_at|date:"D, d M Y H:i" }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Approval Chain Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5>Approval Chain</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Action Time</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approver in approvers_status %}
+                    <tr class="{% if approver.is_current %}table-info{% endif %}">
+                        <td>{{ approver.user.get_full_name|default:approver.user.username }}</td>
+                        <td>
+                            <span class="badge
+                                {% if approver.status == 'Approved' %}bg-success
+                                {% elif approver.status == 'Rejected' %}bg-danger
+                                {% elif approver.status == 'Pending' %}bg-warning
+                                {% elif approver.status == 'Returned' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ approver.status }}
+                            </span>
+                        </td>
+                        <td>{{ approver.action_time|default:"-" }}</td>
+                        <td>{{ approver.remarks|default:"No remarks provided" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Logs Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5>Action Logs</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Performed By</th>
+                        <th>Action</th>
+                        <th>Target User</th>
+                        <th>Remarks</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in action_logs %}
+                    <tr>
+                        <td>
+                            {% if log.performed_by %}
+                                {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                            {% else %}
+                                <span class="text-muted">System</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.get_action_display }}</td>
+                        <td>
+                            {% if log.target_user %}
+                                {{ log.target_user.get_full_name|default:log.target_user.username }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                         <td>
+    {% if item.remarks %}
+        {{ item.remarks }}
+    {% else %}
+        <span class="text-muted">No remarks provided</span>
+    {% endif %}
+</td>
+
+                        <td>{{ log.timestamp|date:"D, d M Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Return-to History Section -->
+    {% if return_to_history %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5>Return-to History</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for entry in return_to_history %}
+                <li class="list-group-item">
+                    <strong>Returned From:</strong> {{ entry.performed_by.get_full_name|default:entry.performed_by.username }}<br>
+                    <strong>Returned To:</strong> {{ entry.target_user.get_full_name|default:entry.target_user.username }}<br>
+                    <strong>Remarks:</strong> {{ entry.remarks|default:"-" }}<br>
+                    <small>Time: {{ entry.timestamp|date:"D, d M Y H:i" }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation and Download Buttons -->
+<div class="text-center mt-4">
+    <!-- Ensure correct URL for PDF download -->
+    <a href="{% url 'approver:track_admin_minute' pk=minute.pk %}?download=pdf" class="btn btn-primary">
+        <i class="fas fa-download"></i> Download as PDF
+    </a>
+    <a href="{% url 'approver:dashboard' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+</div>
+{% endblock %}

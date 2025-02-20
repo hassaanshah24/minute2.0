@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+{% load notification_filters %}
+{% block title %}Your Notifications{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">Your Notifications</h2>
+    <ul class="list-group">
+        {% for notification in notifications %}
+            <li class="list-group-item d-flex justify-content-between align-items-center
+                       {% if not notification.is_read %}list-group-item-warning unread-notification{% else %}list-group-item-light{% endif %}">
+                <span>
+                    <strong>{{ notification.title }}</strong> - {{ notification.message }}
+                    {% if notification.link %}
+                        <a href="{{ notification.link }}" class="ms-2 text-decoration-none text-primary">View</a>
+                    {% endif %}
+                    <small class="d-block text-muted mt-2">Received: {{ notification.created_at|date:"D, d M Y H:i" }}</small>
+                </span>
+                {% if not notification.is_read %}
+                    <button class="btn btn-sm btn-outline-success mark-as-read" data-id="{{ notification.id }}">Mark as Read</button>
+                {% endif %}
+            </li>
+        {% empty %}
+            <li class="list-group-item text-center">No notifications available.</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Mark all as read button -->
+    <div class="text-center mt-4">
+        <button id="mark-all-as-read" class="btn btn-outline-danger px-4 py-2">Mark All as Read</button>
+    </div>
+</div>
+
+<!-- Include the JavaScript to handle notifications -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfToken = '{{ csrf_token }}'; // CSRF token for secure POST requests
+
+        // Mark a single notification as read
+        document.querySelectorAll('.mark-as-read').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.getAttribute('data-id');
+
+                fetch(`/notifications/read/${notificationId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const listItem = this.closest('li');
+                        listItem.classList.remove('list-group-item-warning');
+                        listItem.classList.add('list-group-item-light');
+                        this.remove(); // Remove the button after marking as read
+
+                        // Update unread count in the navbar
+                        const unreadBadge = document.querySelector('.badge.bg-danger');
+                        if (unreadBadge) {
+                            let unreadCount = parseInt(unreadBadge.textContent, 10);
+                            unreadBadge.textContent = Math.max(0, unreadCount - 1);
+                        }
+                    } else {
+                        console.error('Failed to mark notification as read:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+
+        // Mark all notifications as read
+        const markAllButton = document.querySelector('#mark-all-as-read');
+        if (markAllButton) {
+            markAllButton.addEventListener('click', function() {
+                fetch(`/notifications/read-all/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelectorAll('.mark-as-read').forEach(button => {
+                            const listItem = button.closest('li');
+                            listItem.classList.remove('list-group-item-warning');
+                            listItem.classList.add('list-group-item-light');
+                            button.remove();
+                        });
+
+                        // Reset unread count in the navbar
+                        const unreadBadge = document.querySelector('.badge.bg-danger');
+                        if (unreadBadge) {
+                            unreadBadge.textContent = '0';
+                        }
+                    } else {
+                        console.error('Failed to mark all notifications as read:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

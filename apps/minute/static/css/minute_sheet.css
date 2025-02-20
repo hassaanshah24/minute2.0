@@ -1,0 +1,156 @@
+/* MAIN CONTAINER */
+.minute-sheet {
+    width: 100%;
+    max-width: 900px;
+    margin: auto;
+    padding: 30px;
+    background: #fff;
+    border: 2px solid #ddd;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    font-family: "Arial", sans-serif;
+    min-height: 1100px; /* Ensures fixed document height */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+/* HEADER STYLING */
+.minute-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.university-name {
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #004085;
+}
+
+.university-address {
+    font-size: 1rem;
+    color: #555;
+}
+
+.header-line {
+    border: 2px solid #000;
+}
+
+/* METADATA */
+.minute-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+/* SUBJECT */
+.minute-subject {
+    font-size: 1.2rem;
+    font-weight: bold;
+    background: #f8f9fa;
+    padding: 10px;
+    border-left: 4px solid #004085;
+    margin-top: 20px;
+}
+
+.highlight-text {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+/* CONTENT */
+.minute-body {
+    font-size: 1rem;
+    margin-top: 15px;
+    text-align: justify;
+    line-height: 1.6;
+}
+
+/* PAGINATION SYSTEM */
+.page {
+    display: none; /* Hide all pages by default */
+    min-height: 900px; /* Fixed document height */
+    padding: 20px;
+}
+
+.page.active {
+    display: block; /* Show only active page */
+}
+
+/* NAVIGATION BUTTONS */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.page-btn {
+    padding: 8px 15px;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    background: #004085;
+    color: white;
+    border-radius: 5px;
+}
+
+.page-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* CREATOR INFO */
+.minute-creator {
+    margin-top: 30px;
+    font-size: 1rem;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* APPROVAL CHAIN */
+.approval-chain {
+    margin-top: 30px;
+    padding: 15px;
+    border-radius: 8px;
+    background: #e9ecef;
+}
+
+.approval-chain h3 {
+    text-align: center;
+    font-weight: bold;
+}
+
+/* FOOTER */
+.minute-footer {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.footer-line {
+    border: 1px solid #000;
+}
+
+.footer-text {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* PRINT SUPPORT */
+@media print {
+    .minute-sheet {
+        page-break-after: always;
+    }
+
+    .page {
+        page-break-before: always;
+    }
+
+    .pagination-controls {
+        display: none; /* Hide pagination controls when printing */
+    }
+}

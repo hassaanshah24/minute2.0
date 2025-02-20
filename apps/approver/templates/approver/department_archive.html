@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Department Archive{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Page Header -->
+    <div class="text-center mb-4">
+        <h1 class="fw-bold text-danger" style="font-family: 'Montserrat', sans-serif; text-transform: uppercase;">
+            Department Archive
+        </h1>
+        <p class="text-muted">All archived minutes for your department and approvals.</p>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <input type="text" id="search-bar" class="form-control w-50" placeholder="Search by title or unique ID...">
+        <select id="status-filter" class="form-select w-25">
+            <option value="">Filter by Status</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+        </select>
+    </div>
+
+    <!-- Archived Minutes Table -->
+    <div class="card shadow border-0">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Archived Minutes</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover" id="archive-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Unique ID</th>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Archived On</th>
+                        <th>Approvers</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="archive-table-body">
+                    {% for entry in archived_minutes %}
+                    {% with minute=entry.minute %}
+                    <tr>
+                        <td class="fw-bold text-danger">{{ minute.unique_id }}</td>
+                        <td class="fw-semibold">{{ minute.title }}</td>
+                        <td>{{ minute.subject|default:"N/A" }}</td>
+                        <td>
+                            <span class="badge
+                                {% if minute.status == 'Approved' %}bg-success
+                                {% elif minute.status == 'Rejected' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">{{ minute.status }}
+                            </span>
+                        </td>
+                        <td>{{ minute.updated_at|date:"M d, Y H:i" }}</td>
+
+                        <!-- Approval Chain Visualization -->
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% for approver in entry.approvers_status %}
+                                    <span class="badge bg-secondary me-1">
+                                        {{ approver.user.get_full_name|default:approver.user.username }} -
+                                        {{ approver.status }}
+                                    </span>
+                                    {% if not forloop.last %} → {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <a href="{% url 'minute:track_detail' minute.pk %}"
+                               class="btn btn-secondary btn-sm">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{% url 'minute:minute_pdf' minute.id %}"
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-folder-open fa-3x mb-3 text-danger"></i>
+                            <p>No archived minutes found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Search & Filter -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBar = document.getElementById('search-bar');
+        const statusFilter = document.getElementById('status-filter');
+        const tableBody = document.getElementById('archive-table-body');
+        const rows = tableBody.querySelectorAll('tr');
+
+        searchBar.addEventListener('input', function () {
+            filterTable();
+        });
+
+        statusFilter.addEventListener('change', function () {
+            filterTable();
+        });
+
+        function filterTable() {
+            const query = searchBar.value.toLowerCase();
+            const status = statusFilter.value;
+
+            rows.forEach(row => {
+                const title = row.children[1].textContent.toLowerCase();
+                const uniqueId = row.children[0].textContent.toLowerCase();
+                const rowStatus = row.children[3].textContent.trim();
+
+                const matchesQuery = title.includes(query) || uniqueId.includes(query);
+                const matchesStatus = !status || rowStatus === status;
+
+                row.style.display = matchesQuery && matchesStatus ? '' : 'none';
+            });
+        }
+    });
+</script>
+
+{% endblock %}

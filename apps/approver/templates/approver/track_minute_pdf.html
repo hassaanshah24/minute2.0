@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Minute Report - {{ minute.title }}</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 90%;
+            margin: 20px auto;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #444;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        td {
+            background-color: #fff;
+        }
+
+        /* Status Badges */
+        .status {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 5px;
+            color: #fff;
+            display: inline-block;
+        }
+        .bg-success { background-color: #28a745; }
+        .bg-danger { background-color: #dc3545; }
+        .bg-warning { background-color: #ffc107; color: #000; }
+        .bg-secondary { background-color: #6c757d; }
+
+        /* Section Styles */
+        .section {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Report Header -->
+        <h1>Minute Report</h1>
+        <h2>{{ minute.title }}</h2>
+        <p>Status:
+            <span class="status
+                {% if minute.status == 'Approved' %}bg-success
+                {% elif minute.status == 'Rejected' %}bg-danger
+                {% elif minute.status == 'Pending' %}bg-warning
+                {% else %}bg-secondary{% endif %}">
+                {{ minute.get_status_display }}
+            </span>
+        </p>
+
+        <!-- Minute Information -->
+        <div class="section">
+            <h3>Minute Information</h3>
+            <table>
+                <tr>
+                    <th>Unique ID</th>
+                    <td>{{ minute.unique_id }}</td>
+                </tr>
+                <tr>
+                    <th>Subject</th>
+                    <td>{{ minute.subject|default:"No Subject Provided" }}</td>
+                </tr>
+                <tr>
+                    <th>Description</th>
+                    <td>{{ minute.description|default:"No Description" }}</td>
+                </tr>
+                <tr>
+                    <th>Attachment</th>
+                    <td>
+                        {% if minute.attachment %}
+                            <a href="{{ minute.attachment.url }}">Download Attachment</a>
+                        {% else %}
+                            <span class="text-muted">No Attachment</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Created By</th>
+                    <td>{{ minute.created_by.get_full_name|default:minute.created_by.username }}</td>
+                </tr>
+                <tr>
+                    <th>Created At</th>
+                    <td>{{ minute.created_at|date:"D, d M Y H:i" }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Approval Chain -->
+        <div class="section">
+            <h3>Approval Chain</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Action Time</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approver in approvers_status %}
+                    <tr>
+                        <td>{{ approver.user.get_full_name|default:approver.user.username }}</td>
+                        <td><span class="status
+                            {% if approver.status == 'Approved' %}bg-success
+                            {% elif approver.status == 'Rejected' %}bg-danger
+                            {% elif approver.status == 'Pending' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            {{ approver.status }}
+                        </span></td>
+                        <td>{{ approver.action_time|default:"-" }}</td>
+                        <td>{{ approver.remarks|default:"No remarks provided" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No approvers in the chain.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Action Logs -->
+        <div class="section">
+            <h3>Action Logs</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Performed By</th>
+                        <th>Action</th>
+                        <th>Target User</th>
+                        <th>Remarks</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in action_logs %}
+                    <tr>
+                        <td>
+                            {% if log.performed_by %}
+                                {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                            {% else %}
+                                <span class="text-muted">System</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.get_action_display }}</td>
+                        <td>
+                            {% if log.target_user %}
+                                {{ log.target_user.get_full_name|default:log.target_user.username }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                       <td>{{ approver.remarks|default:"No remarks provided" }}</td>
+                        <td>{{ log.timestamp|date:"D, d M Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No action logs available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated on {{ timestamp|date:"D, d M Y H:i" }} | Confidential Document</p>
+        </div>
+    </div>
+</body>
+</html>

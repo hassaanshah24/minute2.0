@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+{% load dict_filters %}
+{% block title %}Track Minutes{% endblock %}
+
+<pre>{{ minutes }}</pre> <!-- Debugging output for minutes -->
+<pre>{{ approval_chains }}</pre> <!-- Debugging output for approval chains -->
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center mb-4">Track Minutes</h1>
+
+    {% for minute in minutes %}
+    <!-- Minute Card -->
+    <div class="card shadow-sm mb-5">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Minute: {{ minute.title }}</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Subject:</strong> {{ minute.subject|default:"No Subject Provided" }}</p>
+            <p><strong>Description:</strong> {{ minute.description|default:"No Description Provided" }}</p>
+            <p><strong>Unique ID:</strong> <span class="badge bg-info">{{ minute.unique_id }}</span></p>
+            <p>
+                <strong>Status:</strong>
+                <span class="badge
+                    {% if minute.status == 'Submitted' %}bg-warning
+                    {% elif minute.status == 'Approved' %}bg-success
+                    {% elif minute.status == 'Rejected' %}bg-danger
+                    {% elif minute.status == 'Pending' %}bg-warning
+                    {% elif minute.status == 'Marked' %}bg-info
+                    {% elif minute.status == 'Returned' %}bg-secondary
+                    {% else %}bg-secondary{% endif %}">
+                    {{ minute.get_status_display }}
+                </span>
+            </p>
+            <p><strong>Created By:</strong> {{ minute.created_by.username }}</p>
+            <p><strong>Created At:</strong> {{ minute.created_at|date:"D, d M Y H:i" }}</p>
+        </div>
+    </div>
+
+    <!-- Approval Chain Details -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Approval Chain Details</h5>
+        </div>
+        <div class="card-body">
+            {% with approval_chains|dict_key:minute.id as approvers %}
+            {% if approvers %}
+            <ul class="list-group">
+                {% for approver in approvers %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>{{ approver.user.username }}</strong>
+                    <span class="badge bg-secondary">Order: {{ approver.order }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No Approval Chain Linked</p>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <!-- Approvers' Status -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Approvers' Status</h5>
+        </div>
+        <div class="card-body">
+            {% with approvers_status_map|dict_key:minute.id as approvers_status %}
+            {% if approvers_status %}
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order</th>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Action Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approver in approvers_status %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ approver.approver }}</td>
+                        <td>
+                            <span class="badge
+                                {% if approver.status == 'Approved' %}bg-success
+                                {% elif approver.status == 'Rejected' %}bg-danger
+                                {% elif approver.status == 'Pending' %}bg-warning
+                                {% elif approver.status == 'Returned' %}bg-info
+                                {% else %}bg-secondary{% endif %}">
+                                {{ approver.status }}
+                            </span>
+                        </td>
+                        <td>{{ approver.action_time|default:"Pending" }}</td>
+                        <td>{{ approver.remarks|default:"No remarks provided" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No approvers have taken action yet.</p>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-warning text-center">
+        <strong>No minutes found.</strong>
+    </div>
+    {% endfor %}
+
+    <!-- Back to Dashboard Button -->
+    <div class="text-center mt-4">
+        <a href="{% if user.role == 'Admin' %}
+                     {% url 'users:admin_dashboard' %}
+                 {% elif user.role == 'Faculty' %}
+                     {% url 'users:faculty_dashboard' %}
+                 {% elif user.role == 'Superuser' %}
+                     {% url 'users:superuser_dashboard' %}
+                 {% else %}
+                     {% url 'users:login' %}
+                 {% endif %}"
+           class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script src="{% static 'js/track_minute.js' %}"></script>
+{% endblock %}

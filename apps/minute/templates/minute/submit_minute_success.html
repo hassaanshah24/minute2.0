@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Minute Submitted Successfully{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Success Message -->
+    <div class="text-center mb-4">
+        <h1 class="text-success">
+            <i class="fas fa-check-circle"></i> Minute Submitted Successfully!
+        </h1>
+        <p class="text-muted">Your minute has been successfully submitted and is now pending approval.</p>
+    </div>
+
+    <!-- Minute Details -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Minute Details</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Title:</strong> {{ minute.title }}</p>
+            <p><strong>Subject:</strong> {{ minute.subject|default:"No Subject Provided" }}</p>
+            <p><strong>Description:</strong></p>
+            <p class="text-justify">{{ minute.description }}</p>
+            <p><strong>Unique ID:</strong> <span class="badge bg-info">{{ minute.unique_id }}</span></p>
+            <p>
+                <strong>Status:</strong>
+                <span class="badge
+                    {% if minute.status == 'Submitted' %}bg-warning
+                    {% elif minute.status == 'Approved' %}bg-success
+                    {% elif minute.status == 'Rejected' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ minute.get_status_display }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Approval Chain Visualization -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Approval Chain</h5>
+        </div>
+        <div class="card-body">
+            {% if approval_chain %}
+            <ul class="list-group">
+                {% for approver in approvers %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>{{ approver.user.username }}</strong>
+                    <span class="badge bg-secondary">Order: {{ approver.order }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">No Approval Chain Linked</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Actions</h5>
+        </div>
+        <div class="card-body text-center">
+            <a href="{% url 'minute:track_detail' pk=minute.id %}" class="btn btn-secondary btn-lg me-3">
+    <i class="fas fa-tasks"></i> Track Minute
+</a>
+
+        </div>
+    </div>
+
+    <!-- Success Alert -->
+    <div class="alert alert-success mt-4" role="alert">
+        <strong>Success!</strong> Your minute is now under review. Track its progress or download it for your records.
+    </div>
+</div>
+
+<script src="{% static 'js/submit_minute.js' %}"></script>
+{% endblock %}

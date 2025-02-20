@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Approver{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Welcome Section -->
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-center mb-4" style="font-family: 'Poppins', sans-serif;">
+                Welcome, {{ user.get_full_name|default:user.username }}
+            </h1>
+        </div>
+    </div>
+
+    <!-- Summary Statistics Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Approvals</h5>
+                    <p class="display-4 text-warning">{{ total_pending }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Approved Minutes</h5>
+                    <p class="display-4 text-success">{{ total_approved }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title">Rejected Minutes</h5>
+                    <p class="display-4 text-danger">{{ total_rejected }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Minutes Table -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Pending Minutes for Your Action</h3>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Title</th>
+                            <th>Unique ID</th>
+                            <th>Created By</th>
+                            <th>Submitted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for approval in pending_approvals %}
+                        <tr>
+                            <td>{{ approval.minute.title }}</td>
+                            <td>{{ approval.minute.unique_id }}</td>
+                            <td>{{ approval.minute.created_by.get_full_name|default:approval.minute.created_by.username }}</td>
+                            <td>{{ approval.minute.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'approver:minute_details' approval.minute.pk %}" class="btn btn-primary btn-sm">
+                                    View & Act
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No pending minutes for your action.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{% url 'approver:pending_minutes' %}" class="btn btn-secondary">
+            View All Pending Minutes
+        </a>
+    </div>
+</div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock %}

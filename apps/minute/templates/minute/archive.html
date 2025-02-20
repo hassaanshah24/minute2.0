@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Archived Minutes{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center mb-4">Archived Minutes</h1>
+
+    <!-- Search and Filter Section -->
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <input type="text" id="search-bar" class="form-control w-50" placeholder="Search by title or unique ID...">
+        <div>
+            <select id="status-filter" class="form-select">
+                <option value="">Filter by Status</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Archived Minutes Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Unique ID</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Created By</th>
+                    <th scope="col">Created At</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="archive-table-body">
+                {% for minute in archived_minutes %}  {# 🔹 Fix: Ensure correct context variable #}
+                <tr>
+                    <td>{{ minute.title }}</td>
+                    <td>{{ minute.unique_id }}</td>
+                    <td>
+                        <span class="badge
+                            {% if minute.status == 'Approved' %}bg-success
+                            {% elif minute.status == 'Rejected' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            {{ minute.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ minute.created_by.username }}</td>
+                    <td>{{ minute.created_at|date:"D, d M Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'minute:track_detail' minute.id %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        {% if minute.id %}
+    <a href="{% url 'minute:minute_pdf' minute.id %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-download"></i> Download
+    </a>
+{% else %}
+    <span class="text-muted">No PDF Available</span>
+{% endif %}
+
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No Archived Minutes Found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+       <!-- Back to Dashboard Button -->
+<div class="text-center mt-4">
+    <a href="{% if user.role == 'Admin' %}
+                 {% url 'users:admin_dashboard' %}
+             {% elif user.role == 'Faculty' %}
+                 {% url 'users:faculty_dashboard' %}
+             {% elif user.role == 'Superuser' %}
+                 {% url 'users:superuser_dashboard' %}
+             {% else %}
+                 {% url 'users:login' %}
+             {% endif %}"
+       class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBar = document.getElementById('search-bar');
+        const statusFilter = document.getElementById('status-filter');
+        const tableBody = document.getElementById('archive-table-body');
+        const rows = tableBody.querySelectorAll('tr');
+
+        // Search functionality
+        searchBar.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            filterTable(query, statusFilter.value);
+        });
+
+        // Status filter functionality
+        statusFilter.addEventListener('change', function () {
+            filterTable(searchBar.value.toLowerCase(), this.value);
+        });
+
+        function filterTable(query, status) {
+            rows.forEach(row => {
+                const title = row.children[0].textContent.toLowerCase();
+                const uniqueId = row.children[1].textContent.toLowerCase();
+                const rowStatus = row.children[2].textContent.trim();
+
+                const matchesQuery = title.includes(query) || uniqueId.includes(query);
+                const matchesStatus = !status || rowStatus === status;
+
+                row.style.display = matchesQuery && matchesStatus ? '' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

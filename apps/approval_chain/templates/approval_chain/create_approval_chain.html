@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ chain_name|default_if_none:"Create" }} Approval Chain{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">{{ chain_name|default_if_none:"Create" }} Approval Chain</h2>
+
+    <form method="post" id="approval-chain-form" action="{% url 'approval_chain:create' %}">
+        {% csrf_token %}
+
+        <!-- Display Error Messages -->
+        {% if errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> {{ errors }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+
+        <!-- Approval Chain Name -->
+        <div class="mb-4">
+            <label for="chain_name" class="form-label"><strong>Approval Chain Name:</strong></label>
+            <input type="text"
+                   name="chain_name"
+                   id="chain_name"
+                   class="form-control"
+                   value="{{ chain_name|default_if_none:'' }}"
+                   placeholder="Enter a unique chain name"
+                   required>
+        </div>
+
+        <!-- Approvers Table -->
+        <div class="mb-4">
+            <label><strong>Approvers:</strong></label>
+            <table class="table table-striped table-hover" id="approvers-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 20%;">Order</th>
+                        <th>Approver</th>
+                        <th style="width: 15%;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approver in approvers %}
+                    <tr>
+                        <td>
+                            <input type="number"
+                                   name="order[]"
+                                   value="{{ approver.order }}"
+                                   class="form-control"
+                                   min="1"
+                                   required>
+                        </td>
+                        <td>
+                            <select name="approvers[]" class="form-select">
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if user.id == approver.user.id %}selected{% endif %}>
+                                    {{ user.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger remove-approver">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" id="add-approver-btn" class="btn btn-success mt-2">
+                <i class="fas fa-plus"></i> Add Approver
+            </button>
+        </div>
+
+        <!-- Hidden Minute ID -->
+        <input type="hidden" name="minute_id" value="{{ minute_id }}">
+
+        <!-- Submit Button -->
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Approval Chain
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const users = {{ users|safe }}; // List of users passed as JSON
+        const tableBody = document.querySelector('#approvers-table tbody');
+        const addApproverBtn = document.getElementById('add-approver-btn');
+
+        // Function to dynamically add a new approver row
+        function addApproverRow(orderValue = '', approverId = '') {
+            const row = document.createElement('tr');
+
+            // Order field
+            const orderCell = document.createElement('td');
+            const orderInput = document.createElement('input');
+            orderInput.type = 'number';
+            orderInput.name = 'order[]';
+            orderInput.value = orderValue;
+            orderInput.placeholder = 'Order';
+            orderInput.classList.add('form-control');
+            orderInput.min = '1';
+            orderInput.required = true;
+            orderCell.appendChild(orderInput);
+            row.appendChild(orderCell);
+
+            // Approver dropdown
+            const approverCell = document.createElement('td');
+            const approverSelect = document.createElement('select');
+            approverSelect.name = 'approvers[]';
+            approverSelect.classList.add('form-select');
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.username;
+                if (user.id == approverId) {
+                    option.selected = true;
+                }
+                approverSelect.appendChild(option);
+            });
+            approverCell.appendChild(approverSelect);
+            row.appendChild(approverCell);
+
+            // Remove button
+            const actionCell = document.createElement('td');
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.classList.add('btn', 'btn-danger');
+            removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            removeBtn.addEventListener('click', function () {
+                row.remove();
+            });
+            actionCell.appendChild(removeBtn);
+            row.appendChild(actionCell);
+
+            // Append the row to the table
+            tableBody.appendChild(row);
+        }
+
+        // Add new approver on button click
+        addApproverBtn.addEventListener('click', function () {
+            addApproverRow();
+        });
+    });
+</script>
+{% endblock %}
