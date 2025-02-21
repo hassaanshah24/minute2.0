@@ -99,9 +99,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-LOGIN_URL = '/users/login/'  # Correct login URL for redirection
-LOGIN_REDIRECT_URL = '/users/redirect/'
-LOGOUT_REDIRECT_URL = '/users/login/'
+
+LOGIN_URL = '/users/login/'  # Ensure this exists
+LOGIN_REDIRECT_URL = '/users/redirect/'  # Redirects to the correct URL
+LOGOUT_REDIRECT_URL = '/'  # Redirect to landing page after logout
+
 
 # Disable CSRF for API requests using JWT authentication
 REST_FRAMEWORK = {
